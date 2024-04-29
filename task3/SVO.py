@@ -55,21 +55,20 @@ class SVO:
             file.write(self.b.to_bytes())
 
 
-encoder = PrimitiveSVD(compression_ratio=0.05)
-svo = SVO("img/luntik.bmp", encoder)
-svo.save("ZOV.SVO")
-decoded_image = svo.decode()
-decoded_image.save("power.bmp")
+def compress_img(img: str, new_img: str, ratio: float, encode: str):
+    decoder = None
+    if encode == "numpy":
+        decoder = SVD(compression_ratio=ratio)
+    elif encode == "power":
+        decoder = PrimitiveSVD(compression_ratio=ratio)
+    elif encode == "block":
+        decoder = BlockPowerSVD(compression_ratio=ratio)
+    svo = SVO(img, decoder)
+    svo.save("ZOV.SVO")
+    decoded_image = svo.decode()
+    decoded_image.save(new_img)
 
 
-encoder = SVD(compression_ratio=0.05)
-svo = SVO("img/luntik.bmp", encoder)
-svo.save("ZOV.SVO")
-decoded_image = svo.decode()
-decoded_image.save("numpy.bmp")
-
-encoder = BlockPowerSVD(compression_ratio=0.05)
-svo = SVO("img/luntik.bmp", encoder)
-svo.save("ZOV.SVO")
-decoded_image = svo.decode()
-decoded_image.save("BlockPower.bmp")
+compress_img("img/Sutener.bmp", "compress_img/SutenerNP.bmp", 0.05, "numpy")
+compress_img("img/Sutener.bmp", "compress_img/SutenerPower.bmp", 0.05, "power")
+compress_img("img/Sutener.bmp", "compress_img/SutenerBlock.bmp", 0.05, "block")

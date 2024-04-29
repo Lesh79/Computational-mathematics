@@ -67,7 +67,9 @@ class SVD(Encoder):
         return self
 
     def decompress(self):
-        return np.dot(np.dot(self.u, np.diag(self.s)), self.v).astype(np.uint8)
+        img = np.dot(np.dot(self.u, np.diag(self.s)), self.v)
+        img = np.clip(img, 0, 255).astype(np.uint8)
+        return img
 
 
 class PrimitiveSVD(Encoder):
