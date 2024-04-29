@@ -4,11 +4,11 @@ from struct import unpack, pack
 import numpy as np
 from PIL import Image
 
-from task3.SVD import SVD, PrimitiveSVD, BlockPowerSVD
+from task3.SVD import SVD, PrimitiveSVD, BlockPowerSVD, Encoder
 
 
 class SVO:
-    def __init__(self, file_path, encoder):
+    def __init__(self, file_path, encoder: Encoder):
         self.r = None
         self.g = None
         self.b = None
@@ -19,7 +19,7 @@ class SVO:
             else:
                 self.encode(Image.open(file_path), encoder)
 
-    def encode(self, img, encoder):
+    def encode(self, img, encoder: Encoder):
         if encoder is None:
             encoder = SVD(2)
         r, g, b = img.split()
@@ -56,20 +56,20 @@ class SVO:
 
 
 encoder = PrimitiveSVD(compression_ratio=0.05)
-svo = SVO("img/shrek.bmp", encoder)
+svo = SVO("img/luntik.bmp", encoder)
 svo.save("ZOV.SVO")
 decoded_image = svo.decode()
 decoded_image.save("power.bmp")
 
 
 encoder = SVD(compression_ratio=0.05)
-svo = SVO("img/shrek.bmp", encoder)
+svo = SVO("img/luntik.bmp", encoder)
 svo.save("ZOV.SVO")
 decoded_image = svo.decode()
 decoded_image.save("numpy.bmp")
 
 encoder = BlockPowerSVD(compression_ratio=0.05)
-svo = SVO("img/shrek.bmp", encoder)
+svo = SVO("img/luntik.bmp", encoder)
 svo.save("ZOV.SVO")
 decoded_image = svo.decode()
 decoded_image.save("BlockPower.bmp")

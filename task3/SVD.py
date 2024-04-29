@@ -1,29 +1,22 @@
+from abc import ABC
 from struct import pack, calcsize, unpack
 
 import PIL
 import numpy as np
 
 
-class SVD:
-
+class Encoder(ABC):
     def __init__(self, compression_ratio):
         self.u = None
-        self.s = None
         self.v = None
+        self.s = None
         self.ratio = compression_ratio
 
-    def compress(self, img: PIL.Image):
-        u, s, v = np.linalg.svd(img, full_matrices=False)
-        num_singular_values = int(len(s) * self.ratio)
-
-        self.u = u[:, :num_singular_values]
-        self.s = s[:num_singular_values]
-        self.v = v[:num_singular_values, :]
-
-        return self
+    def compress(self, img):
+        pass
 
     def decompress(self):
-        return np.dot(np.dot(self.u, np.diag(self.s)), self.v).astype(np.uint8)
+        pass
 
     def to_bytes(self):
         if self.u is None or self.s is None or self.v is None:
@@ -61,12 +54,25 @@ class SVD:
         return self
 
 
-class PrimitiveSVD:
+class SVD(Encoder):
+
+    def compress(self, img: PIL.Image):
+        u, s, v = np.linalg.svd(img, full_matrices=False)
+        num_singular_values = int(len(s) * self.ratio)
+
+        self.u = u[:, :num_singular_values]
+        self.s = s[:num_singular_values]
+        self.v = v[:num_singular_values, :]
+
+        return self
+
+    def decompress(self):
+        return np.dot(np.dot(self.u, np.diag(self.s)), self.v).astype(np.uint8)
+
+
+class PrimitiveSVD(Encoder):
     def __init__(self, compression_ratio, num_iterations=10):
-        self.u = None
-        self.s = None
-        self.v = None
-        self.ratio = compression_ratio
+        super().__init__(compression_ratio)
         self.num_iterations = num_iterations
 
     def compress(self, img: np.ndarray):
@@ -109,47 +115,10 @@ class PrimitiveSVD:
 
         return v
 
-    def to_bytes(self):
-        if self.u is None or self.s is None or self.v is None:
-            raise ValueError('Cannot convert to bytes an empty values')
 
-        u_shape_flat = self.u.shape[0] * self.u.shape[1]
-        s_len = len(self.s)
-        v_shape_0, v_shape_1 = self.v.shape
-
-        shapes_bytes = pack('<LIII', u_shape_flat, s_len, v_shape_0, v_shape_1)
-
-        u_bytes = self.u.tobytes()
-        s_bytes = self.s.tobytes()
-        v_bytes = self.v.tobytes()
-
-        return shapes_bytes + u_bytes + s_bytes + v_bytes
-
-    def read(self, data: bytes):
-        offset = calcsize('<LIII')
-        u_shape_flat, s_len, v_shape_0, v_shape_1 = unpack('<LIII', data[:offset])
-
-        u_shape_0 = u_shape_flat // v_shape_1
-        u_shape_1 = v_shape_1
-
-        u_size = u_shape_0 * u_shape_1 * 4
-        s_size = s_len * 4
-
-        u_end = offset + u_size
-        s_end = u_end + s_size
-
-        self.u = np.frombuffer(data[offset:u_end], dtype=np.float32).reshape((u_shape_0, u_shape_1))
-        self.s = np.frombuffer(data[u_end:s_end], dtype=np.float32)
-        self.v = np.frombuffer(data[s_end:], dtype=np.float32).reshape((v_shape_0, v_shape_1))
-
-        return self
-
-
-class BlockPowerSVD:
-    def __init__(self, compression_ratio, num_iterations=10, block_size=30):
-        self.u = None
-        self.s = None
-        self.v = None
+class BlockPowerSVD(Encoder):
+    def __init__(self, compression_ratio, num_iterations=10, block_size=50):
+        super().__init__(compression_ratio)
         self.ratio = compression_ratio
         self.num_iterations = num_iterations
         self.block_size = block_size
@@ -182,38 +151,3 @@ class BlockPowerSVD:
         V = V[:, :k]
 
         return U, s, V.T
-
-    def to_bytes(self):
-        if self.u is None or self.s is None or self.v is None:
-            raise ValueError('Cannot convert to bytes an empty values')
-
-        u_shape_flat = self.u.shape[0] * self.u.shape[1]
-        s_len = len(self.s)
-        v_shape_0, v_shape_1 = self.v.shape
-
-        shapes_bytes = pack('<LIII', u_shape_flat, s_len, v_shape_0, v_shape_1)
-
-        u_bytes = self.u.tobytes()
-        s_bytes = self.s.tobytes()
-        v_bytes = self.v.tobytes()
-
-        return shapes_bytes + u_bytes + s_bytes + v_bytes
-
-    def read(self, data: bytes):
-        offset = calcsize('<LIII')
-        u_shape_flat, s_len, v_shape_0, v_shape_1 = unpack('<LIII', data[:offset])
-
-        u_shape_0 = u_shape_flat // v_shape_1
-        u_shape_1 = v_shape_1
-
-        u_size = u_shape_0 * u_shape_1 * 4
-        s_size = s_len * 4
-
-        u_end = offset + u_size
-        s_end = u_end + s_size
-
-        self.u = np.frombuffer(data[offset:u_end], dtype=np.float32).reshape((u_shape_0, u_shape_1))
-        self.s = np.frombuffer(data[u_end:s_end], dtype=np.float32)
-        self.v = np.frombuffer(data[s_end:], dtype=np.float32).reshape((v_shape_0, v_shape_1))
-
-        return self
