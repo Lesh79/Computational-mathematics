@@ -49,7 +49,6 @@ class SVO:
     def save(self, file_path: str):
         with open(file_path, 'wb') as file:
             file.write(pack("<4s", b'SVO'))
-            file.write(pack("<b", 1))
             file.write(self.r.to_bytes())
             file.write(self.g.to_bytes())
             file.write(self.b.to_bytes())
@@ -69,6 +68,6 @@ def compress_img(img: str, new_img: str, ratio: float, encode: str):
     decoded_image.save(new_img)
 
 
-compress_img("img/Sutener.bmp", "compress_img/SutenerNP.bmp", 0.05, "numpy")
-compress_img("img/Sutener.bmp", "compress_img/SutenerPower.bmp", 0.05, "power")
-compress_img("img/Sutener.bmp", "compress_img/SutenerBlock.bmp", 0.05, "block")
+compress_img("img/shape.bmp", "compress_img/shapeNP.bmp", 0.03, "numpy")
+compress_img("img/shape.bmp", "compress_img/shapePower.bmp", 0.03, "power")
+compress_img("img/shape.bmp", "compress_img/shapeBlock.bmp", 0.03, "block")
